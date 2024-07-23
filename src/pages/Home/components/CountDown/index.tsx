@@ -1,16 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import { useContext, useEffect } from 'react'
 import { CountdownContainer, Separator } from './styles'
 import { differenceInSeconds } from 'date-fns';
+import { CyclesContext } from '../..';
 
-interface CountdownProps {
-  activeCycle: any;
-  setCycle: any
-  activeCycleId: any;
-}
-
-export default function CountDown({ activeCycle }: CountdownProps) {
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+export default function CountDown() {
+  const { activeCycle, activeCycleId, marckCurrentCycleAsFinished, amountSecondsPassed, setSecondsPassed } = useContext(CyclesContext)
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
+
+  const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
+
+  const minutesAmount = Math.floor(currentSeconds / 60);
+  const secondsAmount = currentSeconds % 60;
+
+  const minutes = String(minutesAmount).padStart(2, '0')
+  const seconds = String(secondsAmount).padStart(2, '0')
+
+  useEffect(() => {
+    if (activeCycle) {
+      document.title = `${minutes} : ${seconds}`
+    }
+
+  }, [minutes, seconds])
 
   useEffect(() => {
     let interval: number;
@@ -19,18 +29,11 @@ export default function CountDown({ activeCycle }: CountdownProps) {
         const secondsDifference = differenceInSeconds(new Date(), activeCycle.startDate)
 
         if (secondsDifference > totalSeconds) {
-          setCycles(state => state.map(cycle => {
-            if (cycle.id === activeCycleId) {
-              return { ...cycle, finishedDate: new Date() }
-            } else {
-              return cycle
-            }
-          }))
-
-          setAmountSecondsPassed(totalSeconds)
+          marckCurrentCycleAsFinished()
+          setSecondsPassed(totalSeconds)
           clearInterval(interval)
         } else {
-          setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate))
+          setSecondsPassed(secondsDifference)
         }
       }, 1000)
     }
@@ -38,7 +41,7 @@ export default function CountDown({ activeCycle }: CountdownProps) {
     return () => {
       clearInterval(interval)
     }
-  }, [activeCycle, totalSeconds])
+  }, [activeCycle, totalSeconds, activeCycleId, marckCurrentCycleAsFinished, setSecondsPassed])
 
   return (
     <CountdownContainer>
